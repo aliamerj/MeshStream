@@ -13,7 +13,6 @@ var (
 	serveRoot string
 )
 
-// serveCmd represents the serve command
 var serveCmd = &cobra.Command{
 	Use:   "serve [config-file]",
 	Short: "Start the MeshStream server",
