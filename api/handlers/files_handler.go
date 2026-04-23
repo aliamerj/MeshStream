@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -14,27 +15,28 @@ import (
 func (c Config) AddFilesEndPoints(g *echo.Group) {
 	files := g.Group("/files")
 	files.GET("", c.getAllFiles)
+	files.GET("/content", c.streamFiles)
 }
 
-func (c *Config) getAllFiles(eCtx *echo.Context) error {
-	reqPath := eCtx.QueryParamOr("path", "/")
+func (c *Config) getAllFiles(e *echo.Context) error {
+	reqPath := e.QueryParamOr("path", "/")
 	fullPath, cleanRelPath, err := c.resolve(reqPath)
 	if err != nil {
-		return withErr(eCtx, err)
+		return withErr(e, err)
 	}
 
 	info, err := os.Stat(fullPath)
 	if err != nil {
-		return withErr(eCtx, err)
+		return withErr(e, err)
 	}
 
 	if !info.IsDir() {
-		return withErr(eCtx, fmt.Errorf("path is not a directory"))
+		return withErr(e, fmt.Errorf("path is not a directory"))
 	}
 
 	items, err := os.ReadDir(fullPath)
 	if err != nil {
-		return withErr(eCtx, err)
+		return withErr(e, err)
 	}
 
 	entries := make([]types.FileEntry, 0, len(items))
@@ -47,7 +49,7 @@ func (c *Config) getAllFiles(eCtx *echo.Context) error {
 
 		itemInfo, err := item.Info()
 		if err != nil {
-			return withErr(eCtx, err)
+			return withErr(e, err)
 		}
 
 		itemRelPath := filepath.ToSlash(filepath.Join(cleanRelPath, item.Name()))
@@ -70,10 +72,50 @@ func (c *Config) getAllFiles(eCtx *echo.Context) error {
 
 	}
 
-	return eCtx.JSON(http.StatusOK, types.FileListResponse{
+	return e.JSON(http.StatusOK, types.FileListResponse{
 		Path:    cleanRelPath,
 		Entries: entries,
 	})
+}
+
+func (c *Config) streamFiles(e *echo.Context) error {
+	reqPath := e.QueryParam("path")
+	if reqPath == "" {
+		return withErr(e, fmt.Errorf("path is required"))
+	}
+
+	fullPath, _, err := c.resolve(reqPath)
+	if err != nil {
+		return withErr(e, err)
+	}
+
+	info, err := os.Lstat(fullPath)
+	if err != nil {
+		return withErr(e, err)
+	}
+
+	if info.Mode()&os.ModeSymlink != 0 {
+		return withErr(e, fmt.Errorf("symlinks are not allowed"))
+	}
+
+	if info.IsDir() {
+		return withErr(e, fmt.Errorf("path is a directory"))
+	}
+
+	file, err := os.Open(fullPath)
+	if err != nil {
+		return withErr(e, err)
+	}
+	defer file.Close()
+
+	contentType := mime.TypeByExtension(filepath.Ext(fullPath))
+	if contentType != "" {
+		e.Response().Header().Set(echo.HeaderContentType, contentType)
+	}
+
+	http.ServeContent(e.Response(), e.Request(), info.Name(), info.ModTime(), file)
+
+	return nil
 }
 
 func (c *Config) resolve(relPath string) (fullPath string, cleanRelPath string, err error) {

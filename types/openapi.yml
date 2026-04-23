@@ -13,19 +13,6 @@ tags:
   - name: files
 
 paths:
-  /health:
-    get:
-      operationId: getHealth
-      tags: [health]
-      summary: Health check
-      responses:
-        "200":
-          description: Service health
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/HealthResponse"
-
   /api/files:
     get:
       operationId: listFiles
@@ -64,6 +51,62 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  
+  /api/files/content:
+    get:
+      operationId: getFileContent
+      tags: [files]
+      summary: Stream or serve a file inline
+      parameters:
+        - in: query
+          name: path
+          required: true
+          description: Relative path from configured root
+          schema:
+            type: string
+            example: /Videos/demo.mp4
+      responses:
+        "200":
+          description: File content streamed inline when supported
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+            video/mp4:
+              schema:
+                type: string
+                format: binary
+            audio/mpeg:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden path
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
 components:
   securitySchemes:
@@ -73,18 +116,6 @@ components:
       bearerFormat: JWT
 
   schemas:
-    HealthResponse:
-      type: object
-      required: [status]
-      properties:
-        status:
-          type: string
-          example: ok
-        database:
-          type: object
-          additionalProperties:
-            type: string
-
     ErrorResponse:
       type: object
       required: [message]

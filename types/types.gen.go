@@ -27,14 +27,14 @@ type FileListResponse struct {
 	Path    string      `json:"path"`
 }
 
-// HealthResponse defines model for HealthResponse.
-type HealthResponse struct {
-	Database *map[string]string `json:"database,omitempty"`
-	Status   string             `json:"status"`
-}
-
 // ListFilesParams defines parameters for ListFiles.
 type ListFilesParams struct {
 	// Path Relative path from configured root, usually starting with /
+	Path string `form:"path" json:"path"`
+}
+
+// GetFileContentParams defines parameters for GetFileContent.
+type GetFileContentParams struct {
+	// Path Relative path from configured root
 	Path string `form:"path" json:"path"`
 }
