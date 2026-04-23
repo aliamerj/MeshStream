@@ -10,8 +10,8 @@ import (
 
 type Server struct {
 	addr   string
-	db     database.Service
-	config config.Config
+	DB     database.Service
+	Config config.Config
 }
 
 func NewServer(cfg config.Config, dburl string) (*Server, *http.Server, error) {
@@ -22,8 +22,8 @@ func NewServer(cfg config.Config, dburl string) (*Server, *http.Server, error) {
 
 	srv := &Server{
 		addr:   cfg.Addr,
-		db:     db,
-		config: cfg,
+		DB:     db,
+		Config: cfg,
 	}
 
 	httpServer := &http.Server{
@@ -38,9 +38,8 @@ func NewServer(cfg config.Config, dburl string) (*Server, *http.Server, error) {
 }
 
 func (s *Server) Close() error {
-	if s.db != nil {
-		return s.db.Close()
+	if s.DB != nil {
+		return s.DB.Close()
 	}
 	return nil
 }
-

@@ -20,20 +20,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 		MaxAge:           300,
 	}))
 
-	e.GET("/", s.HelloWorldHandler)
-	e.GET("/health", s.healthHandler)
+	s.CreateRoutes(e)
 
 	return e
-}
-
-func (s *Server) HelloWorldHandler(c *echo.Context) error {
-	resp := map[string]string{
-		"message": "Hello World",
-	}
-
-	return c.JSON(http.StatusOK, resp)
-}
-
-func (s *Server) healthHandler(c *echo.Context) error {
-	return c.JSON(http.StatusOK, s.db.Health())
 }

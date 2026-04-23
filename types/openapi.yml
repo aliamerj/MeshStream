@@ -1,0 +1,127 @@
+openapi: 3.0.3
+info:
+  title: MeshStream API
+  version: 0.1.0
+  description: |
+    MeshStream API for browsing and streaming personal files across devices.
+
+servers:
+  - url: http://localhost:8080
+
+tags:
+  - name: health
+  - name: files
+
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Service health
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /api/files:
+    get:
+      operationId: listFiles
+      tags: [files]
+      summary: List files and directories under a relative path
+      parameters:
+        - in: query
+          name: path
+          required: true
+          description: Relative path from configured root, usually starting with /
+          schema:
+            type: string
+            example: /
+      responses:
+        "200":
+          description: Directory listing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileListResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden path
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Path not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          example: ok
+        database:
+          type: object
+          additionalProperties:
+            type: string
+
+    ErrorResponse:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          example: invalid request
+
+    FileListResponse:
+      type: object
+      required: [path, entries]
+      properties:
+        path:
+          type: string
+          example: /Videos
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/FileEntry"
+    FileEntry:
+      type: object
+      required: [name, path, is_dir, size, modified_at]
+      properties:
+        name:
+          type: string
+          example: demo.mp4
+        path:
+          type: string
+          example: /Videos/demo.mp4
+        is_dir:
+          type: boolean
+          example: false
+        size:
+          type: integer
+          format: int64
+          example: 1048576
+        modified_at:
+          type: string
+          format: date-time
+          example: 2026-04-21T10:30:00Z
