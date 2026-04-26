@@ -108,13 +108,19 @@ func (c *Config) streamFiles(e *echo.Context) error {
 	}
 	defer file.Close()
 
+	filename := info.Name()
+
 	contentType := mime.TypeByExtension(filepath.Ext(fullPath))
-	if contentType != "" {
-		e.Response().Header().Set(echo.HeaderContentType, contentType)
+	if contentType == "" {
+		contentType = "application/octet-stream"
 	}
 
-	http.ServeContent(e.Response(), e.Request(), info.Name(), info.ModTime(), file)
+	header := e.Response().Header()
+	header.Set(echo.HeaderContentType, contentType)
+	header.Set("Content-Disposition", fmt.Sprintf(`inline; filename="%s"`, filename))
+	header.Set("X-Content-Type-Options", "nosniff")
 
+	http.ServeContent(e.Response(), e.Request(), filename, info.ModTime(), file)
 	return nil
 }
 
